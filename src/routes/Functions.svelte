@@ -2,8 +2,11 @@
 	import { SlideToggle } from '@skeletonlabs/skeleton';
 	let count = 0;
 	let adding = 1;
+	let canAffordUpgrade = false;
+	let upgradeCost = 10;
 	let multiplier = 1;
-	let canAfford = false;
+	let multiplierCost = 10000;
+	let canAffordMultiplier = false;
 
 	let autoClickOn = false;
 	let autoClickInterval: ReturnType<typeof setInterval> | undefined;
@@ -11,7 +14,8 @@
 	let autoUpgradeOn = false;
 	let autoUpgradeInterval: ReturnType<typeof setInterval> | undefined;
 
-	let upgradeCost = 10;
+	let autoMultiplyOn = false;
+	let autoMultiplyInterval: ReturnType<typeof setInterval> | undefined;
 
 	function increment() {
 		count += adding * multiplier;
@@ -22,8 +26,13 @@
 		if (userConfrimed) {
 			count = 0;
 			adding = 1;
-			multiplier = 1;
 			upgradeCost = 10;
+			multiplier = 1;
+			multiplierCost = 10000;
+
+			autoClickOn = false;
+			autoMultiplyOn = false;
+			autoUpgradeOn = false;
 		}
 	}
 
@@ -35,10 +44,18 @@
 		}
 	}
 
+	function multiply() {
+		if (count >= multiplierCost) {
+			count -= multiplierCost;
+			multiplier += multiplier * 0.5;
+			multiplierCost = Math.trunc(multiplierCost + multiplierCost * 0.6);
+		}
+	}
+
 	$: {
 		if (autoClickOn) {
 			if (!autoClickInterval) {
-				autoClickInterval = setInterval(increment, 100);
+				autoClickInterval = setInterval(increment, 10);
 			}
 		} else {
 			if (autoClickInterval) {
@@ -59,10 +76,23 @@
 			}
 		}
 	}
-	$: canAfford = count >= upgradeCost;
+	$: {
+		if (autoMultiplyOn) {
+			if (!autoMultiplyInterval) {
+				autoMultiplyInterval = setInterval(multiply, 100);
+			}
+		} else {
+			if (autoMultiplyInterval) {
+				clearInterval(autoMultiplyInterval);
+				autoMultiplyInterval = undefined;
+			}
+		}
+	}
+	$: canAffordUpgrade = count >= upgradeCost;
+	$: canAffordMultiplier = count >= multiplierCost;
 </script>
 
-<div class="flex flex-col items-center">
+<div class="flex flex-col items-center text-center">
 	<h1>{Math.trunc(count)}$</h1>
 	<div class="grid grid-cols-2 gap-3 p-4">
 		<button type="button" on:click={increment} class="variant-ghost-primary p-2 rounded-lg"
@@ -72,19 +102,26 @@
 			type="button"
 			on:click={upgrade}
 			class=" p-2 rounded-lg variant-ghost-primary"
-			class:variant-ghost-error={!canAfford}>upgrade</button
+			class:variant-ghost-error={!canAffordUpgrade}>upgrade</button
 		>
-		<p>{adding}</p>
-		<p>{upgradeCost}</p>
-	</div>
-	<div class="flex flex-col gap-3 absolute top-0 right-0 p-4 border-solid variant-ghost-error">
-		<SlideToggle name="slider-label" bind:checked={autoClickOn} active="bg-primary-500" size="sm"
-			>Autoclicker</SlideToggle
-		>
-		<SlideToggle name="slider-label" bind:checked={autoUpgradeOn} active="bg-primary-500" size="sm"
-			>Autoclicker</SlideToggle
-		>
-		<button type="button" on:click={Reset} class="variant-filled-error p-2 rounded-lg">Reset</button
+		<button
+			type="button"
+			on:click={multiply}
+			class=" p-2 rounded-lg variant-ghost-primary"
+			class:variant-ghost-error={!canAffordMultiplier}>multiply</button
 		>
 	</div>
+</div>
+
+<div class="flex flex-col gap-3 absolute top-0 right-0 p-4 border-solid variant-ghost-error">
+	<SlideToggle name="slider-label" bind:checked={autoClickOn} active="bg-primary-500" size="sm"
+		>Autoclicker</SlideToggle
+	>
+	<SlideToggle name="slider-label" bind:checked={autoUpgradeOn} active="bg-primary-500" size="sm"
+		>AutoUpgrade</SlideToggle
+	>
+	<SlideToggle name="slider-label" bind:checked={autoMultiplyOn} active="bg-primary-500" size="sm"
+		>AutoMultiply</SlideToggle
+	>
+	<button type="button" on:click={Reset} class="variant-filled-error p-2 rounded-lg">Reset</button>
 </div>
